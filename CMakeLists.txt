@@ -3,11 +3,13 @@ project(younotgonnasleepwelltoday)
 
 add_subdirectory(${PROJECT_SOURCE_DIR}/deps/raylib)
 
-set(CMAKE_C_STANDARD 11)
-set(CMAKE_CXX_STANDARD 11)
+set(CMAKE_C_STANDARD 17)
+set(CMAKE_CXX_STANDARD 17)
 
 file(GLOB SRC ${PROJECT_SOURCE_DIR}/src/*)
 add_executable(${PROJECT_NAME} ${SRC})
+
+target_compile_options(${PROJECT_NAME} PUBLIC "-Wall" "-Wextra" "-Werror")
 
 target_link_libraries(${PROJECT_NAME} raylib)
 
