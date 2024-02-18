@@ -1,17 +1,22 @@
 cmake_minimum_required(VERSION 3.15)
 project(younotgonnasleepwelltoday)
 
-add_subdirectory(${PROJECT_SOURCE_DIR}/deps/raylib)
-
 set(CMAKE_C_STANDARD 17)
 set(CMAKE_CXX_STANDARD 17)
 
-file(GLOB SRC ${PROJECT_SOURCE_DIR}/src/*)
+set(CMAKE_BUILD_TYPE "Debug")
+
+set(BOX2D_BUILD_TESTBED OFF)
+add_subdirectory(${PROJECT_SOURCE_DIR}/deps/raylib)
+add_subdirectory(${PROJECT_SOURCE_DIR}/deps/box2d)
+
+file(GLOB SRC ${PROJECT_SOURCE_DIR}/src/* ${PROJECT_SOURCE_DIR}/src/engine/*)
 add_executable(${PROJECT_NAME} ${SRC})
 
-target_compile_options(${PROJECT_NAME} PUBLIC "-Wall" "-Wextra" "-Werror")
+target_compile_options(${PROJECT_NAME} PUBLIC "-Wall" "-Wextra" "-Werror" "-fsanitize=address")
+target_link_options(${PROJECT_NAME} PUBLIC "-fsanitize=address")
 
-target_link_libraries(${PROJECT_NAME} raylib)
+target_link_libraries(${PROJECT_NAME} raylib box2d)
 
 if (APPLE)
     target_link_libraries(${PROJECT_NAME} "-framework IOKit")

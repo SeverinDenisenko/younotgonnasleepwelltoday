@@ -1,60 +1,39 @@
+#include "box2d/box2d.h"
 #include "raylib.h"
 
-#include "defines.hpp"
+#include "engine/core.hpp"
+#include "engine/defines.hpp"
+#include "engine/ecs.hpp"
 
-namespace en
+
+namespace impl
 {
-class IGame
-{
-public:
-    virtual void setup() noexcept    = 0;
-    virtual void update() noexcept   = 0;
-    virtual void shutdown() noexcept = 0;
-
-    virtual ~IGame() = default;
-};
-
-class IRunner
+class Game : public engine::Game
 {
 public:
-    virtual void run() noexcept = 0;
-
-    virtual ~IRunner() = default;
-};
-
-class Runner : public IRunner
-{
-public:
-    Runner(uptr<IGame> game)
-        : game_(std::move(game))
+    Game()
+        : engine::Game(800, 450, "You Not Gonna Dleep Well Today")
     {
     }
 
-    void run() noexcept override
-    {
-        game_->setup();
-
-        while (!WindowShouldClose()) {
-            game_->update();
-        }
-
-        game_->shutdown();
-    }
-
-private:
-    uptr<IGame> game_;
-};
-} // namespace en
-
-namespace ge
-{
-class Game : public en::IGame
-{
-public:
     void setup() noexcept override
     {
-        InitWindow(800, 450, "raylib [core] example - basic window");
+        engine::Game::setup();
+
+        ecs.registerComponent<engine::vec3>();
+        ecs.finishRegistration();
+
+        engine::ecs::EntityBuilder builder = ecs.getEntityBuilder();
+        engine::ecs::EntityStorage storage = ecs.getEntityStorage();
+
+        engine::ecs::entity_id_t id = storage.createEntity(builder.clear().withComponent<engine::vec3>().build());
+
+        engine::vec3& vec = storage.getComponent<engine::vec3>(id);
+        vec.x             = 0;
+        vec.y             = 0;
+        vec.z             = 0;
     }
+
     void update() noexcept override
     {
         BeginDrawing();
@@ -62,18 +41,22 @@ public:
         DrawText("Congrats! You created your first window!", 190, 200, 20, LIGHTGRAY);
         EndDrawing();
     }
+
     void shutdown() noexcept override
     {
-        CloseWindow();
+        engine::Game::shutdown();
     }
+
+private:
+    engine::ecs::ECS ecs;
 };
-} // namespace ge
+} // namespace impl
 
 
 int main(void)
 {
-    en::uptr<en::IGame> game    = std::make_unique<ge::Game>();
-    en::uptr<en::Runner> runner = std::make_unique<en::Runner>(std::move(game));
+    engine::uptr<engine::IGame> game    = std::make_unique<impl::Game>();
+    engine::uptr<engine::Runner> runner = std::make_unique<engine::Runner>(std::move(game));
     runner->run();
 
     return 0;
