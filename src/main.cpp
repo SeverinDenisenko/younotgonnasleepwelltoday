@@ -5,6 +5,7 @@
 #include "engine/defines.hpp"
 #include "engine/ecs.hpp"
 
+#include <iostream>
 
 namespace impl
 {
@@ -20,18 +21,31 @@ public:
     {
         engine::Game::setup();
 
-        ecs.registerComponent<engine::vec3>();
-        ecs.finishRegistration();
+        engine::ecs::Entity<engine::vec2, engine::vec3> ent;
+        std::cout << ent.size() << " " << ent.count() << std::endl;
+        std::cout << ent.index<engine::vec2>() << " " << ent.index<engine::vec3>() << std::endl;
+        std::cout << ent.size<engine::vec2>() << " " << ent.size<engine::vec3>() << std::endl;
 
-        engine::ecs::EntityBuilder builder = ecs.getEntityBuilder();
-        engine::ecs::EntityStorage storage = ecs.getEntityStorage();
+        std::cout << ent.contains<engine::vec2>() << " " << ent.contains<engine::vec3>() << std::endl;
 
-        engine::ecs::entity_id_t id = storage.createEntity(builder.clear().withComponent<engine::vec3>().build());
+        ent.add<engine::vec2>(engine::vec2{0.0f, 1.0f});
 
-        engine::vec3& vec = storage.getComponent<engine::vec3>(id);
-        vec.x             = 0;
-        vec.y             = 0;
-        vec.z             = 0;
+        std::cout << ent.contains<engine::vec2>() << " " << ent.contains<engine::vec3>() << std::endl;
+
+        ent.remove<engine::vec2>();
+        ent.add<engine::vec3>(engine::vec3{0.0f, 1.0f, 2.0f});
+
+        std::cout << ent.contains<engine::vec2>() << " " << ent.contains<engine::vec3>() << std::endl;
+
+        engine::vec3& res = ent.get<engine::vec3>();
+
+        std::cout << res.x << " " << res.y << " " << res.z << std::endl;
+
+        std::cout << ent.contains<engine::vec2, engine::vec3>() << std::endl;
+
+        ent.add<engine::vec2>(engine::vec2{0.0f, 1.0f});
+
+        std::cout << ent.contains<engine::vec2, engine::vec3>() << std::endl;
     }
 
     void update() noexcept override
@@ -48,7 +62,6 @@ public:
     }
 
 private:
-    engine::ecs::ECS ecs;
 };
 } // namespace impl
 

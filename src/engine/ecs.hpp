@@ -3,169 +3,148 @@
 #include <array>
 #include <bitset>
 #include <numeric>
-#include <typeinfo>
+#include <type_traits>
 #include <vector>
 
 #include "defines.hpp"
 
 namespace engine::ecs
 {
-// https://youtu.be/QAmtgvwHInM?si=agcY-xAfZmwu9GIG
 
-constexpr size_t MAX_COMPONENT_COUNT = 128;
-constexpr size_t MAX_ENTITIES_COUNT  = 1 << 15;
+namespace utils
+{
+namespace detail
+{
+template <typename T, typename... Ts>
+struct Index;
 
-using EntityComponentOffsets = std::array<size_t, MAX_COMPONENT_COUNT>;
-using EntityDescriptor       = std::bitset<MAX_COMPONENT_COUNT>;
-using entity_id_t            = size_t;
-using component_id_t         = size_t;
+template <typename T, typename... Ts>
+struct Index<T, T, Ts...> : std::integral_constant<std::size_t, 0> {
+};
 
-class EntityStorage;
-class EntityBuilder;
+template <typename T, typename U, typename... Ts>
+struct Index<T, U, Ts...> : std::integral_constant<std::size_t, 1 + Index<T, Ts...>::value> {
+};
+} // namespace detail
 
-class ECS
+/*
+ * Returns index of T in variadic template parameter Ts
+ */
+template <typename T, typename... Ts>
+constexpr std::size_t Index = detail::Index<T, Ts...>::value;
+
+/*
+ * Returns count of template parameters in Ts
+ */
+template <typename... Ts>
+constexpr std::size_t Count = sizeof...(Ts);
+
+/*
+ * Returns summary size of all template parameters Ts
+ */
+template <typename... Ts>
+constexpr std::size_t Size = (sizeof(Ts) + ...);
+
+/*
+ * Returns sizes of all template parameters Ts
+ */
+template <typename... Ts>
+constexpr std::array<size_t, Count<Ts...>> Sizes = {sizeof(Ts)...};
+} // namespace utils
+
+template <typename... Components>
+class Entity
 {
 public:
-    template <typename T>
-    void registerComponent();
+    static constexpr size_t size() noexcept
+    {
+        return size_;
+    }
 
-    void finishRegistration();
+    static constexpr size_t count() noexcept
+    {
+        return count_;
+    }
 
-    EntityBuilder getEntityBuilder();
+    template <typename Component>
+    static constexpr size_t index() noexcept
+    {
+        return utils::Index<Component, Components...>;
+    }
 
-    EntityStorage getEntityStorage();
+    template <typename Component>
+    static constexpr size_t size() noexcept
+    {
+        return sizes_[index<Component>()];
+    }
 
-    template <typename T>
-    component_id_t getComponentId();
+    template <typename... RequaredComponents>
+    bool contains() const noexcept
+    {
+        return (components_[index<RequaredComponents>()] && ...);
+    }
 
-    template <typename T>
-    size_t getComponentOffset();
+    template <typename Component, typename... Args>
+    Component& add(Args... args) noexcept
+    {
+        new (ptr<Component>()) Component(std::forward<Args>(args)...);
+        enable<Component>();
+        return *ptr<Component>();
+    }
+
+    template <typename Component>
+    void remove() noexcept
+    {
+        ptr<Component>()->~Component();
+        disable<Component>();
+    }
+
+    template <typename Component>
+    Component& get() noexcept
+    {
+        return *ptr<Component>();
+    }
 
 private:
-    struct ComponentDescriptor {
-        component_id_t id;
-        size_t size;
-        cstr name;
-    };
+    template <typename Component>
+    static constexpr size_t offset() noexcept
+    {
+        return std::accumulate(sizes_.begin(), sizes_.begin() + index<Component>(), 0);
+    }
 
-    component_id_t getUniqueId();
+    template <typename Component>
+    Component* ptr() noexcept
+    {
+        return reinterpret_cast<Component*>(components_storage_.data() + offset<Component>());
+    }
 
-    template <typename T>
-    component_id_t getUniqueComponentId();
+    template <typename Component>
+    void enable() noexcept
+    {
+        components_[index<Component>()] = true;
+    }
 
-    size_t entity_size_{0};
-    size_t component_count_{0};
-    EntityComponentOffsets component_offsets_{};
+    template <typename Component>
+    void disable() noexcept
+    {
+        components_[index<Component>()] = false;
+    }
 
-    std::vector<ComponentDescriptor> component_descriptors_{};
-    bool is_component_registration_allowed_{true};
-    bool is_storage_got_out_{false};
-    bool is_builder_got_out_{false};
+    static constexpr size_t count_ = utils::Count<Components...>;
+    static constexpr size_t size_  = utils::Size<Components...>;
+    static constexpr auto sizes_   = utils::Sizes<Components...>;
+
+    template <size_t I>
+    using component_index_t = std::bitset<I>;
+
+    template <size_t J>
+    using component_storage_t = std::array<byte, J>;
+
+    component_index_t<count_> components_{0};
+    component_storage_t<size_> components_storage_;
 };
 
-template <typename... Args>
-class ISystem
-{
-public:
-    EntityDescriptor requarement() const noexcept = 0;
-    void setup(Args... args) noexcept             = 0;
-    void update(Args... args) noexcept            = 0;
-};
-
-class EntityStorage
-{
-    friend class ECS;
-
-public:
-    entity_id_t createEntity(EntityDescriptor desctiptor);
-
-    template <typename T>
-    T& getComponent(entity_id_t id);
-
-private:
-    size_t entity_count_{0};
-    size_t entity_size_{0};
-    std::vector<std::byte> entities_;
-    std::vector<EntityDescriptor> descriptors_;
-    ECS& ecs_;
-
-    entity_id_t current_entity_{0};
-
-    EntityStorage(size_t entity_count, size_t entity_size, ECS& ecs);
-};
-
-class EntityBuilder
-{
-    friend class ECS;
-
-public:
-    EntityBuilder& clear();
-
-    template <typename T>
-    EntityBuilder& withComponent();
-
-    EntityDescriptor build();
-
-private:
-    EntityDescriptor components_{0};
-    ECS& ecs_;
-
-    EntityBuilder(ECS& ecs);
-};
-
-template <typename T>
-void ECS::registerComponent()
-{
-    assert(is_component_registration_allowed_ && "Component registration does not allowed after game is started");
-
-    ComponentDescriptor desctiptor;
-
-    desctiptor.id   = getUniqueComponentId<T>();
-    desctiptor.size = sizeof(T);
-    desctiptor.name = typeid(T).name();
-
-    component_descriptors_.push_back(desctiptor);
-}
-
-template <typename T>
-component_id_t ECS::getComponentId()
-{
-    assert(!is_component_registration_allowed_ && "You have to finish component registration before getting components id");
-
-    component_id_t id = getUniqueComponentId<T>();
-
-    assert(id < component_count_ && "You tried to get id of unregistred component");
-
-    return id;
-}
-
-template <typename T>
-size_t ECS::getComponentOffset()
-{
-    component_id_t id = getComponentId<T>();
-
-    return component_offsets_[id];
-}
-
-template <typename T>
-component_id_t ECS::getUniqueComponentId()
-{
-    static component_id_t component_id{getUniqueId()};
-    return component_id;
-}
-
-template <typename T>
-T& EntityStorage::getComponent(entity_id_t id)
-{
-    return *reinterpret_cast<T*>(entities_.data() + id * entity_size_ + ecs_.getComponentOffset<T>());
-}
-
-
-template <typename T>
-EntityBuilder& EntityBuilder::withComponent()
-{
-    components_[ecs_.getComponentId<T>()] = true;
-    return *this;
-}
+template <typename Entity>
+using EntityStorage = std::vector<Entity>;
 
 } // namespace engine::ecs

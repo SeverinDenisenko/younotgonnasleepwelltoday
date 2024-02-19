@@ -22,6 +22,7 @@ using i64  = int64_t;
 using f32  = float;
 using f64  = double;
 using cstr = const char*;
+using byte = u8;
 
 template <typename T>
 using uptr = std::unique_ptr<T>;
