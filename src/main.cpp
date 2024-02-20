@@ -9,6 +9,43 @@
 
 namespace impl
 {
+
+using Entity        = engine::ecs::Entity<engine::vec2, engine::vec3>;
+using EntityStorage = engine::ecs::EntityStorage<Entity>;
+using EntityBuilder = engine::ecs::EntityBuilder<Entity>;
+using System        = engine::ecs::System<Entity>;
+using SystemManager = engine::ecs::SystemManager<System>;
+
+class MainSystem : public System
+{
+public:
+    void setup(Storage& storage) noexcept override
+    {
+        EntityBuilder builder(storage);
+
+        builder.create().with<engine::vec2>(0.1, 3.5).with<engine::vec3>(0.1, 3.5, 1.0).build();
+        builder.create().with<engine::vec2>(4.1, 1.5).build();
+        builder.create().with<engine::vec3>(1.1, 2.5, 1.4).build();
+    }
+};
+
+class PrintSystem : public System
+{
+public:
+    void update(Storage& storage) noexcept override
+    {
+        auto iter = storage.iterator<engine::vec2>();
+
+        while (iter) {
+            const auto& [a] = *iter;
+
+            std::cout << a.x << " " << a.y << std::endl;
+
+            ++iter;
+        }
+    }
+};
+
 class Game : public engine::Game
 {
 public:
@@ -21,30 +58,14 @@ public:
     {
         engine::Game::setup();
 
-        using Entity        = engine::ecs::Entity<engine::vec2, engine::vec3>;
-        using EntityStorage = engine::ecs::EntityStorage<Entity>;
-        using EntityBuilder = engine::ecs::EntityBuilder<Entity>;
-
-        EntityStorage storage;
-        EntityBuilder builder(storage);
-
-        builder.create().with<engine::vec2>(0.1, 3.5).with<engine::vec3>(0.1, 3.5, 1.0).build();
-        builder.create().with<engine::vec2>(4.1, 1.5).build();
-        builder.create().with<engine::vec3>(1.1, 2.5, 1.4).build();
-
-        auto iter = storage.iterator<engine::vec2>();
-
-        while (iter) {
-            const auto& [a] = *iter;
-
-            std::cout << a.x << " " << a.y << std::endl;
-
-            ++iter;
-        }
+        manager_.add(std::make_unique<MainSystem>());
+        manager_.add(std::make_unique<PrintSystem>());
     }
 
     void update() noexcept override
     {
+        manager_.update();
+
         BeginDrawing();
         ClearBackground(RAYWHITE);
         DrawText("Congrats! You created your first window!", 190, 200, 20, LIGHTGRAY);
@@ -57,6 +78,7 @@ public:
     }
 
 private:
+    SystemManager manager_;
 };
 } // namespace impl
 

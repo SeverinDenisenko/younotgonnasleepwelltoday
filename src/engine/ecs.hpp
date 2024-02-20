@@ -167,6 +167,12 @@ public:
         return entities_[i];
     }
 
+    void remove(size_t i) noexcept
+    {
+        entities_[i] = entities_.back();
+        entities_.pop_back();
+    }
+
     template <typename... RequaredComponents>
     class Iterator
     {
@@ -208,7 +214,7 @@ public:
 
         bool end()
         {
-            return curr_ == storage_.size();
+            return curr_ >= storage_.size();
         }
 
         size_t curr_{0};
@@ -252,6 +258,40 @@ public:
 private:
     size_t current_{0};
     EntityStorage<Entity>& storage_;
+};
+
+template <typename Entity>
+class System
+{
+public:
+    using Storage = EntityStorage<Entity>;
+
+    virtual void setup(Storage&) noexcept {};
+    virtual void update(Storage&) noexcept {};
+
+    virtual ~System() = default;
+};
+
+template <typename System>
+class SystemManager
+{
+public:
+    void add(uptr<System> system) noexcept
+    {
+        system->setup(storage_);
+        systems_.push_back(std::move(system));
+    }
+
+    void update()
+    {
+        for (auto& s : systems_) {
+            s->update(storage_);
+        }
+    }
+
+private:
+    std::vector<uptr<System>> systems_;
+    System::Storage storage_;
 };
 
 } // namespace engine::ecs

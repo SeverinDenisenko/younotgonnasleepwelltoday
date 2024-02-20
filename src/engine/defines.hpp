@@ -43,6 +43,12 @@ struct vec2 {
     {
     }
 
+    vec2()
+        : x(0.0f)
+        , y(0.0f)
+    {
+    }
+
     float x;
     float y;
 };
@@ -52,6 +58,13 @@ struct vec3 {
         : x(x)
         , y(y)
         , z(z)
+    {
+    }
+
+    vec3()
+        : x(0.0f)
+        , y(0.0f)
+        , z(0.0f)
     {
     }
 
