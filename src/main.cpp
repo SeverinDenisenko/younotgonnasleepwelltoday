@@ -23,9 +23,11 @@ public:
     {
         EntityBuilder builder(storage);
 
-        builder.create().with<engine::vec2>(0.1, 3.5).with<engine::vec3>(0.1, 3.5, 1.0).build();
-        builder.create().with<engine::vec2>(4.1, 1.5).build();
-        builder.create().with<engine::vec3>(1.1, 2.5, 1.4).build();
+        for (int i = 0; i < 10; ++i) {
+            for (int j = 0; j < 10; ++j) {
+                builder.create().with<engine::vec2>(j, i).build();
+            }
+        }
     }
 };
 
@@ -38,13 +40,44 @@ public:
 
         while (iter) {
             const auto& [a] = *iter;
-
             std::cout << a.x << " " << a.y << std::endl;
-
             ++iter;
+        }
+
+        std::cout << "END" << std::endl;
+    }
+};
+
+class RemoveSystem : public System
+{
+public:
+    void update(Storage& storage) noexcept override
+    {
+        auto iter = storage.iterator<engine::vec2>();
+
+        if (iter) {
+            storage.remove(iter.id());
         }
     }
 };
+
+class AddSystem : public System
+{
+public:
+    void update(Storage& storage) noexcept override
+    {
+        if (storage.active() == 0) {
+            EntityBuilder builder(storage);
+
+            for (int i = 0; i < 10; ++i) {
+                for (int j = 0; j < 10; ++j) {
+                    builder.create().with<engine::vec2>(j, i).build();
+                }
+            }
+        }
+    }
+};
+
 
 class Game : public engine::Game
 {
@@ -60,6 +93,8 @@ public:
 
         manager_.add(std::make_unique<MainSystem>());
         manager_.add(std::make_unique<PrintSystem>());
+        manager_.add(std::make_unique<RemoveSystem>());
+        manager_.add(std::make_unique<AddSystem>());
     }
 
     void update() noexcept override

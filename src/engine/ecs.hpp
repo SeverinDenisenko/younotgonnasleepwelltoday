@@ -95,13 +95,6 @@ public:
         return *ptr<Component>();
     }
 
-    template <typename Component>
-    void remove() noexcept
-    {
-        ptr<Component>()->~Component();
-        disable<Component>();
-    }
-
     template <typename... RequaredComponents>
     void enable() noexcept
     {
@@ -112,6 +105,11 @@ public:
     void disable() noexcept
     {
         (components_[index<RequaredComponents>()] = ... = false);
+    }
+
+    void destroy() noexcept
+    {
+        disable<Components...>();
     }
 
     template <typename Component>
@@ -147,30 +145,44 @@ private:
     component_storage_t<size_> components_storage_;
 };
 
+using EntityId = size_t;
+
 template <typename Entity>
 class EntityStorage
 {
 public:
-    size_t create() noexcept
+    EntityId create() noexcept
     {
-        entities_.emplace_back();
-        return entities_.size() - 1;
+        if (dead_.size() > 0) {
+            EntityId result = dead_.back();
+            dead_.pop_back();
+            return result;
+        } else {
+            EntityId result = entities_.size();
+            entities_.emplace_back();
+            return result;
+        }
     }
 
-    size_t size() noexcept
+    EntityId size() const noexcept
     {
         return entities_.size();
     }
 
-    Entity& get(size_t i) noexcept
+    EntityId active() const noexcept
+    {
+        return entities_.size() - dead_.size();
+    }
+
+    Entity& get(EntityId i) noexcept
     {
         return entities_[i];
     }
 
-    void remove(size_t i) noexcept
+    void remove(EntityId i) noexcept
     {
-        entities_[i] = entities_.back();
-        entities_.pop_back();
+        entities_[i].destroy();
+        dead_.push_back(i);
     }
 
     template <typename... RequaredComponents>
@@ -201,23 +213,28 @@ public:
             return *this;
         }
 
-        operator bool() noexcept
+        operator bool() const noexcept
         {
             return !end();
         }
 
+        EntityId id() const noexcept
+        {
+            return curr_;
+        }
+
     private:
-        bool good()
+        bool good() noexcept
         {
             return storage_.get(curr_).template contains<RequaredComponents...>();
         }
 
-        bool end()
+        bool end() const noexcept
         {
             return curr_ >= storage_.size();
         }
 
-        size_t curr_{0};
+        EntityId curr_{0};
         EntityStorage& storage_;
     };
 
@@ -229,6 +246,7 @@ public:
 
 private:
     std::vector<Entity> entities_;
+    std::vector<EntityId> dead_;
 };
 
 template <typename Entity>
