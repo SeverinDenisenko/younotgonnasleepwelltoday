@@ -21,31 +21,26 @@ public:
     {
         engine::Game::setup();
 
-        engine::ecs::Entity<engine::vec2, engine::vec3> ent;
-        std::cout << ent.size() << " " << ent.count() << std::endl;
-        std::cout << ent.index<engine::vec2>() << " " << ent.index<engine::vec3>() << std::endl;
-        std::cout << ent.size<engine::vec2>() << " " << ent.size<engine::vec3>() << std::endl;
+        using Entity        = engine::ecs::Entity<engine::vec2, engine::vec3>;
+        using EntityStorage = engine::ecs::EntityStorage<Entity>;
+        using EntityBuilder = engine::ecs::EntityBuilder<Entity>;
 
-        std::cout << ent.contains<engine::vec2>() << " " << ent.contains<engine::vec3>() << std::endl;
+        EntityStorage storage;
+        EntityBuilder builder(storage);
 
-        ent.add<engine::vec2>(engine::vec2{0.0f, 1.0f});
+        builder.create().with<engine::vec2>(0.1, 3.5).with<engine::vec3>(0.1, 3.5, 1.0).build();
+        builder.create().with<engine::vec2>(4.1, 1.5).build();
+        builder.create().with<engine::vec3>(1.1, 2.5, 1.4).build();
 
-        std::cout << ent.contains<engine::vec2>() << " " << ent.contains<engine::vec3>() << std::endl;
+        auto iter = storage.iterator<engine::vec2>();
 
-        ent.remove<engine::vec2>();
-        ent.add<engine::vec3>(engine::vec3{0.0f, 1.0f, 2.0f});
+        while (iter) {
+            const auto& [a] = *iter;
 
-        std::cout << ent.contains<engine::vec2>() << " " << ent.contains<engine::vec3>() << std::endl;
+            std::cout << a.x << " " << a.y << std::endl;
 
-        engine::vec3& res = ent.get<engine::vec3>();
-
-        std::cout << res.x << " " << res.y << " " << res.z << std::endl;
-
-        std::cout << ent.contains<engine::vec2, engine::vec3>() << std::endl;
-
-        ent.add<engine::vec2>(engine::vec2{0.0f, 1.0f});
-
-        std::cout << ent.contains<engine::vec2, engine::vec3>() << std::endl;
+            ++iter;
+        }
     }
 
     void update() noexcept override

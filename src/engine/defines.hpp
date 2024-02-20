@@ -36,7 +36,28 @@ using sptr = std::shared_ptr<T>;
 template <typename T>
 using rptr = T*;
 
-using vec2 = Vector2;
-using vec3 = Vector3;
-using vec4 = Vector4;
+struct vec2 {
+    vec2(float x, float y)
+        : x(x)
+        , y(y)
+    {
+    }
+
+    float x;
+    float y;
+};
+
+struct vec3 {
+    vec3(float x, float y, float z)
+        : x(x)
+        , y(y)
+        , z(z)
+    {
+    }
+
+    float x;
+    float y;
+    float z;
+};
+
 } // namespace engine

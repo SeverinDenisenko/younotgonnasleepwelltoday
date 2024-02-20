@@ -3,6 +3,7 @@
 #include <array>
 #include <bitset>
 #include <numeric>
+#include <tuple>
 #include <type_traits>
 #include <vector>
 
@@ -56,6 +57,8 @@ template <typename... Components>
 class Entity
 {
 public:
+    Entity() = default;
+
     static constexpr size_t size() noexcept
     {
         return size_;
@@ -99,6 +102,18 @@ public:
         disable<Component>();
     }
 
+    template <typename... RequaredComponents>
+    void enable() noexcept
+    {
+        (components_[index<RequaredComponents>()] = ... = true);
+    }
+
+    template <typename... RequaredComponents>
+    void disable() noexcept
+    {
+        (components_[index<RequaredComponents>()] = ... = false);
+    }
+
     template <typename Component>
     Component& get() noexcept
     {
@@ -118,18 +133,6 @@ private:
         return reinterpret_cast<Component*>(components_storage_.data() + offset<Component>());
     }
 
-    template <typename Component>
-    void enable() noexcept
-    {
-        components_[index<Component>()] = true;
-    }
-
-    template <typename Component>
-    void disable() noexcept
-    {
-        components_[index<Component>()] = false;
-    }
-
     static constexpr size_t count_ = utils::Count<Components...>;
     static constexpr size_t size_  = utils::Size<Components...>;
     static constexpr auto sizes_   = utils::Sizes<Components...>;
@@ -145,6 +148,110 @@ private:
 };
 
 template <typename Entity>
-using EntityStorage = std::vector<Entity>;
+class EntityStorage
+{
+public:
+    size_t create() noexcept
+    {
+        entities_.emplace_back();
+        return entities_.size() - 1;
+    }
+
+    size_t size() noexcept
+    {
+        return entities_.size();
+    }
+
+    Entity& get(size_t i) noexcept
+    {
+        return entities_[i];
+    }
+
+    template <typename... RequaredComponents>
+    class Iterator
+    {
+    public:
+        using ResultType = std::tuple<RequaredComponents&...>;
+
+        Iterator(EntityStorage& storage) noexcept
+            : storage_(storage)
+        {
+            while (!end() && !good()) {
+                ++curr_;
+            }
+        }
+
+        ResultType operator*() const noexcept
+        {
+            return ResultType(storage_.get(curr_).template get<RequaredComponents>()...);
+        }
+
+        Iterator& operator++() noexcept
+        {
+            do {
+                ++curr_;
+            } while (!end() && !good());
+
+            return *this;
+        }
+
+        operator bool() noexcept
+        {
+            return !end();
+        }
+
+    private:
+        bool good()
+        {
+            return storage_.get(curr_).template contains<RequaredComponents...>();
+        }
+
+        bool end()
+        {
+            return curr_ == storage_.size();
+        }
+
+        size_t curr_{0};
+        EntityStorage& storage_;
+    };
+
+    template <typename... RequaredComponents>
+    Iterator<RequaredComponents...> iterator() noexcept
+    {
+        return Iterator<RequaredComponents...>(*this);
+    }
+
+private:
+    std::vector<Entity> entities_;
+};
+
+template <typename Entity>
+class EntityBuilder
+{
+public:
+    EntityBuilder(EntityStorage<Entity>& storage)
+        : storage_(storage)
+    {
+    }
+
+    EntityBuilder& create() noexcept
+    {
+        current_ = storage_.create();
+        return *this;
+    }
+
+    template <typename Component, typename... Args>
+    EntityBuilder& with(Args... args) noexcept
+    {
+        storage_.get(current_).template add<Component>(std::forward<Args>(args)...);
+        return *this;
+    }
+
+    void build() noexcept {}
+
+private:
+    size_t current_{0};
+    EntityStorage<Entity>& storage_;
+};
 
 } // namespace engine::ecs
