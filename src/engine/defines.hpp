@@ -73,4 +73,6 @@ struct vec3 {
     float z;
 };
 
+constexpr f32 pi = 3.14159f;
+
 } // namespace engine

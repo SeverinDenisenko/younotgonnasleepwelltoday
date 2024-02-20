@@ -4,3 +4,6 @@
 [submodule "deps/box2d"]
 	path = deps/box2d
 	url = https://github.com/erincatto/box2d.git
+[submodule "deps/fmt"]
+	path = deps/fmt
+	url = https://github.com/fmtlib/fmt.git

@@ -19,6 +19,7 @@ class Game : public IGame
 {
 public:
     Game(i32 width, i32 height, cstr title) noexcept;
+    Game(cstr title) noexcept;
 
     void setup() noexcept override;
 
@@ -26,10 +27,18 @@ public:
 
     void shutdown() noexcept override;
 
+    void exit() noexcept;
+
+    i32 width() const noexcept;
+
+    i32 height() const noexcept;
+
 private:
-    i32 width_{0};
-    i32 height_{0};
+    i32 width_{800};
+    i32 height_{450};
     cstr title_{nullptr};
+    bool exit_{false};
+    bool fullscreen_{false};
 };
 
 class IRunner
