@@ -151,6 +151,9 @@ template <typename Entity>
 class EntityStorage
 {
 public:
+    template <typename... RequaredComponents>
+    using ComponentsRefs = std::tuple<RequaredComponents&...>;
+
     EntityId create() noexcept
     {
         if (dead_.size() > 0) {
@@ -181,16 +184,16 @@ public:
 
     void remove(EntityId i) noexcept
     {
-        entities_[i].destroy();
-        dead_.push_back(i);
+        if (std::find(dead_.begin(), dead_.end(), i) == dead_.end()) {
+            entities_[i].destroy();
+            dead_.push_back(i);
+        }
     }
 
     template <typename... RequaredComponents>
     class Iterator
     {
     public:
-        using ResultType = std::tuple<RequaredComponents&...>;
-
         Iterator(EntityStorage& storage) noexcept
             : storage_(storage)
         {
@@ -199,9 +202,9 @@ public:
             }
         }
 
-        ResultType operator*() const noexcept
+        ComponentsRefs<RequaredComponents...> operator*() const noexcept
         {
-            return ResultType(storage_.get(curr_).template get<RequaredComponents>()...);
+            return ComponentsRefs<RequaredComponents...>(storage_.get(curr_).template get<RequaredComponents>()...);
         }
 
         Iterator& operator++() noexcept
@@ -242,6 +245,18 @@ public:
     Iterator<RequaredComponents...> iterator() noexcept
     {
         return Iterator<RequaredComponents...>(*this);
+    }
+
+    template <typename... RequaredComponents>
+    std::tuple<RequaredComponents&...> get() noexcept
+    {
+        for (Entity& e : entities_) {
+            if (e.template contains<RequaredComponents...>()) {
+                return ComponentsRefs<RequaredComponents...>(e.template get<RequaredComponents>()...);
+            }
+        }
+
+        assert(false);
     }
 
 private:
