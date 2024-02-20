@@ -257,6 +257,7 @@ public:
         }
 
         assert(false);
+        __builtin_unreachable();
     }
 
 private:

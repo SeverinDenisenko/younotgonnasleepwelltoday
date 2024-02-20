@@ -16,22 +16,14 @@ namespace components
 {
 
 struct Camera {
-    Camera(engine::f32 x, engine::f32 y)
-        : pos(x, y)
-    {
-    }
-
-    Camera(engine::f32 x, engine::f32 y, engine::f32 zoom)
-        : pos(x, y)
-        , zoom(zoom)
+    Camera(engine::f32 zoom)
+        : zoom(zoom)
     {
     }
 
     Camera() = default;
 
-    engine::vec2 pos{0.0, 0.0};
-    engine::f32 zoom{1};
-    engine::f32 rot{0};
+    engine::f32 zoom{1.0f};
 };
 
 struct Transform {
@@ -42,9 +34,55 @@ struct Transform {
 
     Transform() = default;
 
-    engine::vec2 pos{0.0, 0.0};
-    engine::vec2 scale{1.0, 1.0};
-    engine::f32 rot{0};
+    engine::vec2 pos{0.0f, 0.0f};
+    engine::vec2 scale{1.0f, 1.0f};
+    engine::vec2 origin{0.0f, 0.0f};
+    engine::f32 rot{0.0f};
+};
+
+class TransformBuilder
+{
+public:
+    TransformBuilder& create()
+    {
+        t_ = Transform();
+        return *this;
+    }
+
+    TransformBuilder& position(engine::f32 x, engine::f32 y)
+    {
+        t_.pos.x = x;
+        t_.pos.y = y;
+        return *this;
+    }
+
+    TransformBuilder& scale(engine::f32 x, engine::f32 y)
+    {
+        t_.scale.x = x;
+        t_.scale.y = y;
+        return *this;
+    }
+
+    TransformBuilder& origin(engine::f32 x, engine::f32 y)
+    {
+        t_.origin.x = x;
+        t_.origin.y = y;
+        return *this;
+    }
+
+    TransformBuilder& rotation(engine::f32 r)
+    {
+        t_.rot = r;
+        return *this;
+    }
+
+    Transform build()
+    {
+        return t_;
+    }
+
+private:
+    Transform t_;
 };
 
 struct Rectangle {
@@ -55,7 +93,7 @@ struct Rectangle {
 
     Rectangle() = default;
 
-    engine::vec2 size{0.0, 0.0};
+    engine::vec2 size{0.0f, 0.0f};
 };
 
 struct Text {
@@ -67,10 +105,10 @@ struct Text {
     {
     }
 
-    engine::cstr text;
-    engine::f32 size;
-    engine::f32 hspacing;
-    engine::f32 wspacing;
+    engine::cstr text{""};
+    engine::f32 size{0.0f};
+    engine::f32 hspacing{0.0f};
+    engine::f32 wspacing{0.0f};
 };
 
 struct Color {
@@ -84,7 +122,7 @@ struct Color {
     {
     }
 
-    ::Color color;
+    ::Color color{};
 };
 
 struct Player {
@@ -120,7 +158,15 @@ public:
 
     void update(Storage& storage) noexcept override
     {
-        fps_ = fmt::format("FPS: {} \nActive: {} \nAll: {}", GetFPS(), storage.active(), storage.size());
+        fps_ = fmt::format(
+            "FPS: {}\n"
+            "Active: {}\n"
+            "All: {}\n"
+            "Memory: {:.2} MB\n",
+            GetFPS(),
+            storage.active(),
+            storage.size(),
+            engine::f32(Entity::size() * storage.size()) / 1024.0f / 1024.0f);
 
         const auto& [text] = storage.get<components::Text>();
         text.text          = fps_.data();
@@ -140,7 +186,7 @@ public:
         builder.create()
             .with<components::Player>()
             .with<components::Color>(RED)
-            .with<components::Transform>()
+            .with<components::Transform>(components::TransformBuilder().create().origin(1.5f, 1.5f).build())
             .with<components::Rectangle>(3.0f, 3.0f)
             .build();
     }
@@ -150,19 +196,24 @@ public:
         engine::f32 dt    = GetFrameTime();
         engine::f32 speed = 10.0f;
 
-        const auto& [player, transform] = storage.get<components::Player, components::Transform>();
+        const auto& [player, ptransform] = storage.get<components::Player, components::Transform>();
+        const auto& [camera, ctransform] = storage.get<components::Camera, components::Transform>();
 
         if (IsKeyDown(KEY_W)) {
-            transform.pos.y -= dt * speed;
+            ptransform.pos.y -= dt * speed;
+            ctransform.pos.y -= dt * speed;
         }
         if (IsKeyDown(KEY_S)) {
-            transform.pos.y += dt * speed;
+            ptransform.pos.y += dt * speed;
+            ctransform.pos.y += dt * speed;
         }
         if (IsKeyDown(KEY_A)) {
-            transform.pos.x -= dt * speed;
+            ptransform.pos.x -= dt * speed;
+            ctransform.pos.x -= dt * speed;
         }
         if (IsKeyDown(KEY_D)) {
-            transform.pos.x += dt * speed;
+            ptransform.pos.x += dt * speed;
+            ctransform.pos.x += dt * speed;
         }
     }
 };
@@ -174,16 +225,16 @@ public:
     {
         EntityBuilder builder(storage);
 
-        engine::u32 size   = 100;
-        engine::f32 square = 1.0f;
+        engine::u32 size   = 600;
+        engine::f32 square = 100.0f / size;
 
         for (engine::u32 i = 0; i < size; ++i) {
             for (engine::u32 j = 0; j < size; ++j) {
                 engine::f32 x = i * square;
                 engine::f32 y = j * square;
 
-                engine::f32 u   = sin(x / size * engine::pi);
-                engine::f32 v   = sin(y / size * engine::pi);
+                engine::f32 u   = pow(sin(engine::f32(i) / engine::f32(size) * engine::pi * 2.0f), 2.0f);
+                engine::f32 v   = pow(sin(engine::f32(j) / engine::f32(size) * engine::pi * 2.0f), 2.0f);
                 engine::u8 grad = u * v * 255.0;
                 components::Color color(grad, grad, grad);
 
@@ -216,7 +267,10 @@ public:
     {
         EntityBuilder builder(storage);
 
-        builder.create().with<components::Camera>(0.0f, 0.0f, h_ / 2.0f / view_).build();
+        builder.create()
+            .with<components::Camera>(h_ / 2.0f / view_)
+            .with<components::Transform>(components::TransformBuilder().create().origin(w_ / 4.0f, h_ / 4.0f).build())
+            .build();
     }
 
     void update(Storage& storage) noexcept override
@@ -224,9 +278,12 @@ public:
         BeginDrawing();
         ClearBackground(RAYWHITE);
 
-        const auto& [camera] = storage.get<components::Camera>();
-        BeginMode2D(
-            (Camera2D){.target = (Vector2){camera.pos.x, camera.pos.y}, .rotation = camera.rot, .zoom = camera.zoom});
+        const auto& [camera, transform] = storage.get<components::Camera, components::Transform>();
+        BeginMode2D((Camera2D){
+            .target   = (Vector2){transform.pos.x, transform.pos.y},
+            .offset   = (Vector2){transform.origin.x, transform.origin.y},
+            .rotation = transform.rot,
+            .zoom     = camera.zoom});
 
         rectangles(storage);
         text(storage);
@@ -245,7 +302,7 @@ private:
 
             DrawRectanglePro(
                 (Rectangle){transform.pos.x, transform.pos.y, rectangle.size.x, rectangle.size.y},
-                (Vector2){0.0f, 0.0f},
+                (Vector2){transform.origin.x, transform.origin.y},
                 transform.rot,
                 color.color);
 
@@ -265,7 +322,7 @@ private:
                 GetFontDefault(),
                 text.text,
                 (Vector2){transform.pos.x, transform.pos.y},
-                (Vector2){0.0f, 0.0f},
+                (Vector2){transform.origin.x, transform.origin.y},
                 transform.rot,
                 text.size,
                 text.hspacing,
@@ -292,10 +349,10 @@ public:
     {
         engine::Game::setup();
 
+        manager_.add(std::make_unique<RenderSystem>(width(), height(), 100.0f));
         manager_.add(std::make_unique<CellSystem>());
         manager_.add(std::make_unique<PlayerSystem>());
         manager_.add(std::make_unique<DebugSystem>());
-        manager_.add(std::make_unique<RenderSystem>(width(), height(), 100.0f));
     }
 
     void update() noexcept override
