@@ -4,6 +4,7 @@
 #include "engine/core.hpp"
 #include "engine/defines.hpp"
 #include "engine/ecs.hpp"
+#include "engine/profiling.hpp"
 
 #include <cmath>
 
@@ -275,6 +276,8 @@ public:
 
     void update(Storage& storage) noexcept override
     {
+        PROFILE_FUNCTION();
+
         BeginDrawing();
         ClearBackground(RAYWHITE);
 
@@ -295,6 +298,8 @@ public:
 private:
     void rectangles(Storage& storage)
     {
+        PROFILE_FUNCTION();
+
         auto rect_iter = storage.iterator<components::Rectangle, components::Transform, components::Color>();
 
         while (rect_iter) {
@@ -312,6 +317,8 @@ private:
 
     void text(Storage& storage)
     {
+        PROFILE_FUNCTION();
+
         auto text_iter = storage.iterator<components::Text, components::Transform, components::Color>();
 
         while (text_iter) {
@@ -347,6 +354,8 @@ public:
 
     void setup() noexcept override
     {
+        PROFILE_FUNCTION();
+
         engine::Game::setup();
 
         manager_.add(std::make_unique<RenderSystem>(width(), height(), 100.0f));
@@ -357,6 +366,8 @@ public:
 
     void update() noexcept override
     {
+        PROFILE_FUNCTION();
+
         manager_.update();
 
         if (IsKeyPressed(KEY_ESCAPE)) {
@@ -366,6 +377,8 @@ public:
 
     void shutdown() noexcept override
     {
+        PROFILE_FUNCTION();
+
         engine::Game::shutdown();
     }
 
