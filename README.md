@@ -7,7 +7,7 @@
 * * Correct view for mutliple aspect ratio ✔️
 * ECS ✔️
 * Rendering
-* * Sprite rendering
+* * Sprite rendering ✔️
 * * Sprite animation
 * * Rendering demo
 * Audio

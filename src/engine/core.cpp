@@ -27,7 +27,7 @@ void Game::setup() noexcept
     }
     width_  = GetRenderWidth();
     height_ = GetRenderHeight();
-    SetTargetFPS(60);
+    SetTargetFPS(120);
     SetExitKey(0);
 }
 

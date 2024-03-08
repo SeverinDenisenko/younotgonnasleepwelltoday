@@ -5,6 +5,7 @@
 #include "engine/defines.hpp"
 #include "engine/ecs.hpp"
 #include "engine/profiling.hpp"
+#include "engine/resources.hpp"
 
 #include <cmath>
 
@@ -83,17 +84,6 @@ private:
     Transform t_;
 };
 
-struct Rectangle {
-    Rectangle(engine::f32 w, engine::f32 h)
-        : size(w, h)
-    {
-    }
-
-    Rectangle() = default;
-
-    engine::vec2 size{0.0f, 0.0f};
-};
-
 struct Text {
     Text(engine::cstr text, engine::f32 size, engine::f32 hspacing, engine::f32 wspacing)
         : text(text)
@@ -123,6 +113,49 @@ struct Color {
     ::Color color{};
 };
 
+struct Sprite {
+    engine::Texture texture;
+    engine::vec2 pos;
+    engine::vec2 size;
+};
+
+class SpriteBuilder {
+public:
+    SpriteBuilder& create()
+    {
+        s_ = Sprite();
+        return *this;
+    }
+
+    SpriteBuilder& texture(engine::Texture texture)
+    {
+        s_.texture = texture;
+        return *this;
+    }
+
+    SpriteBuilder& position(engine::f32 x, engine::f32 y)
+    {
+        s_.pos.x = x;
+        s_.pos.y = y;
+        return *this;
+    }
+
+    SpriteBuilder& size(engine::f32 x, engine::f32 y)
+    {
+        s_.size.x = x;
+        s_.size.y = y;
+        return *this;
+    }
+
+    Sprite build()
+    {
+        return s_;
+    }
+
+private:
+    Sprite s_;
+};
+
 struct Player {};
 
 } // namespace components
@@ -130,14 +163,15 @@ struct Player {};
 using Entity = engine::ecs::Entity<
     components::Camera,
     components::Transform,
-    components::Rectangle,
     components::Color,
     components::Text,
-    components::Player>;
-using EntityStorage = engine::ecs::EntityStorage<Entity>;
-using EntityBuilder = engine::ecs::EntityBuilder<Entity>;
-using System        = engine::ecs::System<Entity>;
-using SystemManager = engine::ecs::SystemManager<System>;
+    components::Player,
+    components::Sprite>;
+using EntityStorage  = engine::ecs::EntityStorage<Entity>;
+using EntityBuilder  = engine::ecs::EntityBuilder<Entity>;
+using System         = engine::ecs::System<Entity>;
+using SystemManager  = engine::ecs::SystemManager<System>;
+using ResourceHolder = engine::ResourceHolder<engine::cstr>;
 
 class DebugSystem : public System {
 public:
@@ -174,15 +208,25 @@ private:
 
 class PlayerSystem : public System {
 public:
+    PlayerSystem(ResourceHolder& holder)
+    {
+        planet = holder.load("../resources/Lava.png", "player");
+    }
+
     void setup(Storage& storage) noexcept override
     {
         EntityBuilder builder(storage);
 
         builder.create()
             .with<components::Player>()
-            .with<components::Color>(RED)
-            .with<components::Transform>(components::TransformBuilder().create().origin(1.5f, 1.5f).build())
-            .with<components::Rectangle>(3.0f, 3.0f)
+            .with<components::Color>(WHITE)
+            .with<components::Transform>(components::TransformBuilder().create().scale(10.0f, 10.0f).origin(1.5f, 1.5f).build())
+            .with<components::Sprite>(components::SpriteBuilder()
+                                          .create()
+                                          .texture(planet)
+                                          .position(0.0f, 0.0f)
+                                          .size(planet.width, planet.height)
+                                          .build())
             .build();
     }
 
@@ -211,15 +255,23 @@ public:
             ctransform.pos.x += dt * speed;
         }
     }
+
+private:
+    engine::Texture planet;
 };
 
 class CellSystem : public System {
 public:
+    CellSystem(ResourceHolder& holder)
+    {
+        planet = holder.load("../resources/Terran.png", "planet");
+    }
+
     void setup(Storage& storage) noexcept override
     {
         EntityBuilder builder(storage);
 
-        engine::u32 size   = 600;
+        engine::u32 size   = 10;
         engine::f32 square = 100.0f / size;
 
         for (engine::u32 i = 0; i < size; ++i) {
@@ -227,15 +279,16 @@ public:
                 engine::f32 x = i * square;
                 engine::f32 y = j * square;
 
-                engine::f32 u   = pow(sin(engine::f32(i) / engine::f32(size) * engine::pi * 2.0f), 2.0f);
-                engine::f32 v   = pow(sin(engine::f32(j) / engine::f32(size) * engine::pi * 2.0f), 2.0f);
-                engine::u8 grad = u * v * 255.0;
-                components::Color color(grad, grad, grad);
-
                 builder.create()
-                    .with<components::Color>(color)
-                    .with<components::Transform>(x, y)
-                    .with<components::Rectangle>(square, square)
+                    .with<components::Color>(WHITE)
+                    .with<components::Transform>(
+                        components::TransformBuilder().create().position(x, y).scale(square, square).build())
+                    .with<components::Sprite>(components::SpriteBuilder()
+                                                  .create()
+                                                  .texture(planet)
+                                                  .position(0.0f, 0.0f)
+                                                  .size(planet.width, planet.height)
+                                                  .build())
                     .build();
             }
         }
@@ -244,7 +297,7 @@ public:
     void update(Storage&) noexcept override {}
 
 private:
-    std::string fps_;
+    engine::Texture planet;
 };
 
 class RenderSystem : public System {
@@ -280,7 +333,7 @@ public:
             .rotation = transform.rot,
             .zoom     = camera.zoom});
 
-        rectangles(storage);
+        texures(storage);
         text(storage);
 
         EndMode2D();
@@ -288,25 +341,6 @@ public:
     }
 
 private:
-    void rectangles(Storage& storage)
-    {
-        PROFILE_FUNCTION();
-
-        auto rect_iter = storage.iterator<components::Rectangle, components::Transform, components::Color>();
-
-        while (rect_iter) {
-            const auto& [rectangle, transform, color] = *rect_iter;
-
-            DrawRectanglePro(
-                (Rectangle){transform.pos.x, transform.pos.y, rectangle.size.x, rectangle.size.y},
-                (Vector2){transform.origin.x, transform.origin.y},
-                transform.rot,
-                color.color);
-
-            ++rect_iter;
-        }
-    }
-
     void text(Storage& storage)
     {
         PROFILE_FUNCTION();
@@ -331,6 +365,27 @@ private:
         }
     }
 
+    void texures(Storage& storage)
+    {
+        PROFILE_FUNCTION();
+
+        auto texures_iter = storage.iterator<components::Sprite, components::Transform, components::Color>();
+
+        while (texures_iter) {
+            const auto& [sprite, transform, color] = *texures_iter;
+
+            DrawTexturePro(
+                sprite.texture,
+                (Rectangle){sprite.pos.x, sprite.pos.y, sprite.size.x, sprite.size.y},
+                (Rectangle){transform.pos.x, transform.pos.y, transform.scale.x, transform.scale.y},
+                (Vector2){transform.origin.x, transform.origin.y},
+                transform.rot,
+                color.color);
+
+            ++texures_iter;
+        }
+    }
+
     engine::u32 w_{0};
     engine::u32 h_{0};
     engine::f32 view_{0};
@@ -350,8 +405,8 @@ public:
         engine::Game::setup();
 
         manager_.add(std::make_unique<RenderSystem>(width(), height(), 100.0f));
-        manager_.add(std::make_unique<CellSystem>());
-        manager_.add(std::make_unique<PlayerSystem>());
+        manager_.add(std::make_unique<CellSystem>(holder_));
+        manager_.add(std::make_unique<PlayerSystem>(holder_));
         manager_.add(std::make_unique<DebugSystem>());
     }
 
@@ -375,6 +430,7 @@ public:
 
 private:
     SystemManager manager_;
+    ResourceHolder holder_;
 };
 } // namespace impl
 
