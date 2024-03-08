@@ -6,17 +6,15 @@
 * * Show window with staff ✔️
 * * Correct view for mutliple aspect ratio ✔️
 * ECS ✔️
-* * Implementation for array of similar objects ✔️
-* * Implementation for unique objects in scene
-* Content packing
-* * Binary data format
-* * Embeded packing tool
 * Rendering
 * * Sprite rendering
 * * Sprite animation
 * * Rendering demo
 * Audio
 * * Audio demo
+* Content packing
+* * Binary data format
+* * Embeded packing tool
 * Physics
 * * Task-based parallelism
 * * Physics demo

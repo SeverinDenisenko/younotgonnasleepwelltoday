@@ -36,7 +36,7 @@ template <typename T>
 using rptr = T*;
 
 struct vec2 {
-    vec2(float x, float y)
+    vec2(f32 x, f32 y)
         : x(x)
         , y(y)
     {
@@ -48,12 +48,12 @@ struct vec2 {
     {
     }
 
-    float x;
-    float y;
+    f32 x;
+    f32 y;
 };
 
 struct vec3 {
-    vec3(float x, float y, float z)
+    vec3(f32 x, f32 y, f32 z)
         : x(x)
         , y(y)
         , z(z)
@@ -67,9 +67,9 @@ struct vec3 {
     {
     }
 
-    float x;
-    float y;
-    float z;
+    f32 x;
+    f32 y;
+    f32 z;
 };
 
 constexpr f32 pi = 3.14159f;
