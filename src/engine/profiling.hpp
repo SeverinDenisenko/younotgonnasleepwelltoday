@@ -6,14 +6,12 @@
 
 #include "defines.hpp"
 
-namespace engine
-{
+namespace engine {
 
 using time_t    = std::chrono::time_point<std::chrono::high_resolution_clock>;
 using elapsed_t = f64;
 
-class AutomaticProfilerRegister
-{
+class AutomaticProfilerRegister {
 public:
     void add(cstr name, time_t begin, time_t end);
 
@@ -27,8 +25,7 @@ public:
     static uptr<AutomaticProfilerRegister> instance_;
 };
 
-class AutomaticProfiler
-{
+class AutomaticProfiler {
 public:
     AutomaticProfiler(cstr name);
 

@@ -10,11 +10,9 @@
 
 #include <fmt/format.h>
 
-namespace impl
-{
+namespace impl {
 
-namespace components
-{
+namespace components {
 
 struct Camera {
     Camera(engine::f32 zoom)
@@ -41,8 +39,7 @@ struct Transform {
     engine::f32 rot{0.0f};
 };
 
-class TransformBuilder
-{
+class TransformBuilder {
 public:
     TransformBuilder& create()
     {
@@ -126,8 +123,7 @@ struct Color {
     ::Color color{};
 };
 
-struct Player {
-};
+struct Player {};
 
 } // namespace components
 
@@ -143,8 +139,7 @@ using EntityBuilder = engine::ecs::EntityBuilder<Entity>;
 using System        = engine::ecs::System<Entity>;
 using SystemManager = engine::ecs::SystemManager<System>;
 
-class DebugSystem : public System
-{
+class DebugSystem : public System {
 public:
     void setup(Storage& storage) noexcept override
     {
@@ -177,8 +172,7 @@ private:
     std::string fps_;
 };
 
-class PlayerSystem : public System
-{
+class PlayerSystem : public System {
 public:
     void setup(Storage& storage) noexcept override
     {
@@ -219,8 +213,7 @@ public:
     }
 };
 
-class CellSystem : public System
-{
+class CellSystem : public System {
 public:
     void setup(Storage& storage) noexcept override
     {
@@ -254,8 +247,7 @@ private:
     std::string fps_;
 };
 
-class RenderSystem : public System
-{
+class RenderSystem : public System {
 public:
     RenderSystem(engine::u32 w, engine::u32 h, engine::f32 view)
         : w_(w)
@@ -344,8 +336,7 @@ private:
     engine::f32 view_{0};
 };
 
-class Game : public engine::Game
-{
+class Game : public engine::Game {
 public:
     Game()
         : engine::Game("You Not Gonna Sleep Well Today")

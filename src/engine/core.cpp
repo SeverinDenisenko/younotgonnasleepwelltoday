@@ -2,8 +2,7 @@
 
 #include "raylib.h"
 
-namespace engine
-{
+namespace engine {
 
 Game::Game(i32 width, i32 height, cstr title) noexcept
     : width_(width)

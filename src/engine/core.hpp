@@ -2,10 +2,8 @@
 
 #include "defines.hpp"
 
-namespace engine
-{
-class IGame
-{
+namespace engine {
+class IGame {
 public:
     virtual void setup() noexcept    = 0;
     virtual void update() noexcept   = 0;
@@ -15,8 +13,7 @@ public:
     virtual ~IGame() = default;
 };
 
-class Game : public IGame
-{
+class Game : public IGame {
 public:
     Game(i32 width, i32 height, cstr title) noexcept;
     Game(cstr title) noexcept;
@@ -41,16 +38,14 @@ private:
     bool fullscreen_{false};
 };
 
-class IRunner
-{
+class IRunner {
 public:
     virtual void run() noexcept = 0;
 
     virtual ~IRunner() = default;
 };
 
-class Runner : public IRunner
-{
+class Runner : public IRunner {
 public:
     Runner(uptr<IGame> game) noexcept;
 

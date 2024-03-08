@@ -4,8 +4,7 @@
 #include <iostream>
 #include <map>
 
-namespace engine
-{
+namespace engine {
 
 uptr<AutomaticProfilerRegister> AutomaticProfilerRegister::instance_ = nullptr;
 
@@ -24,7 +23,8 @@ void AutomaticProfilerRegister::add(cstr name, time_t begin, time_t end)
 
     if (measurements_.contains(name)) {
         measurements_[name] += diff.count();
-    } else {
+    }
+    else {
         measurements_[name] = diff.count();
     }
 }

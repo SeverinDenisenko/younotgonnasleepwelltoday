@@ -9,23 +9,18 @@
 
 #include "defines.hpp"
 
-namespace engine::ecs
-{
+namespace engine::ecs {
 
-namespace utils
-{
-namespace detail
-{
+namespace utils {
+namespace detail {
 template <typename T, typename... Ts>
 struct Index;
 
 template <typename T, typename... Ts>
-struct Index<T, T, Ts...> : std::integral_constant<std::size_t, 0> {
-};
+struct Index<T, T, Ts...> : std::integral_constant<std::size_t, 0> {};
 
 template <typename T, typename U, typename... Ts>
-struct Index<T, U, Ts...> : std::integral_constant<std::size_t, 1 + Index<T, Ts...>::value> {
-};
+struct Index<T, U, Ts...> : std::integral_constant<std::size_t, 1 + Index<T, Ts...>::value> {};
 } // namespace detail
 
 /*
@@ -54,8 +49,7 @@ constexpr std::array<size_t, Count<Ts...>> Sizes = {sizeof(Ts)...};
 } // namespace utils
 
 template <typename... Components>
-class Entity
-{
+class Entity {
 public:
     Entity() = default;
 
@@ -148,8 +142,7 @@ private:
 using EntityId = size_t;
 
 template <typename Entity>
-class EntityStorage
-{
+class EntityStorage {
 public:
     template <typename... RequaredComponents>
     using ComponentsRefs = std::tuple<RequaredComponents&...>;
@@ -160,7 +153,8 @@ public:
             EntityId result = dead_.back();
             dead_.pop_back();
             return result;
-        } else {
+        }
+        else {
             EntityId result = entities_.size();
             entities_.emplace_back();
             return result;
@@ -191,8 +185,7 @@ public:
     }
 
     template <typename... RequaredComponents>
-    class Iterator
-    {
+    class Iterator {
     public:
         Iterator(EntityStorage& storage) noexcept
             : storage_(storage)
@@ -266,8 +259,7 @@ private:
 };
 
 template <typename Entity>
-class EntityBuilder
-{
+class EntityBuilder {
 public:
     EntityBuilder(EntityStorage<Entity>& storage)
         : storage_(storage)
@@ -295,8 +287,7 @@ private:
 };
 
 template <typename Entity>
-class System
-{
+class System {
 public:
     using Storage = EntityStorage<Entity>;
 
@@ -307,8 +298,7 @@ public:
 };
 
 template <typename System>
-class SystemManager
-{
+class SystemManager {
 public:
     void add(uptr<System> system) noexcept
     {

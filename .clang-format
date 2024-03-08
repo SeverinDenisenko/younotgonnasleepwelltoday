@@ -4,7 +4,7 @@ AlignConsecutiveAssignments: true
 AlignAfterOpenBracket: AlwaysBreak
 AccessModifierOffset: -4
 AlignTrailingComments: true
-#AlignConsecutiveDeclarations: true
+AlignConsecutiveDeclarations: false
 AllowAllParametersOfDeclarationOnNextLine: true
 AllowShortFunctionsOnASingleLine: Empty
 AllowShortIfStatementsOnASingleLine: Never
@@ -14,11 +14,10 @@ AlwaysBreakTemplateDeclarations: Yes
 BinPackParameters: false
 BinPackArguments: false
 BreakBeforeBinaryOperators: None
-BreakBeforeBraces: Linux
+BreakBeforeBraces: Stroustrup
 BreakBeforeTernaryOperators: true
 BreakConstructorInitializersBeforeComma: true
 ColumnLimit: 120
-CommentPragmas: "^ IWYU pragma:"
 ConstructorInitializerAllOnOneLineOrOnePerLine: false
 ConstructorInitializerIndentWidth: 4
 ContinuationIndentWidth: 4
@@ -28,9 +27,6 @@ IndentCaseLabels: true
 IndentWidth: 4
 MaxEmptyLinesToKeep: 2
 NamespaceIndentation: None
-ObjCSpaceAfterProperty: true
-ObjCSpaceBeforeProtocolList: true
-ObjCBlockIndentWidth: 4
 PenaltyBreakBeforeFirstCallParameter: 19
 PenaltyBreakComment: 300
 PenaltyBreakFirstLessLess: 120
@@ -51,7 +47,6 @@ DerivePointerAlignment: false
 PointerAlignment: Left
 UseTab: Never
 AlignOperands: true
-#AlignOperands: AlignAfterOperator
 AllowAllArgumentsOnNextLine: false
 AllowAllConstructorInitializersOnNextLine: false
 
