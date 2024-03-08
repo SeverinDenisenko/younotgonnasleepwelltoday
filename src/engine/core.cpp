@@ -29,6 +29,7 @@ void Game::setup() noexcept
     height_ = GetRenderHeight();
     SetTargetFPS(120);
     SetExitKey(0);
+    InitAudioDevice();
 }
 
 bool Game::running() noexcept
@@ -54,6 +55,7 @@ i32 Game::height() const noexcept
 
 void Game::shutdown() noexcept
 {
+    CloseAudioDevice();
     CloseWindow();
 }
 

@@ -156,6 +156,11 @@ private:
     Sprite s_;
 };
 
+struct Audio {
+    engine::Music music{};
+    bool playing{false};
+};
+
 struct Player {};
 
 } // namespace components
@@ -166,12 +171,14 @@ using Entity = engine::ecs::Entity<
     components::Color,
     components::Text,
     components::Player,
-    components::Sprite>;
-using EntityStorage  = engine::ecs::EntityStorage<Entity>;
-using EntityBuilder  = engine::ecs::EntityBuilder<Entity>;
-using System         = engine::ecs::System<Entity>;
-using SystemManager  = engine::ecs::SystemManager<System>;
-using ResourceHolder = engine::ResourceHolder<engine::cstr>;
+    components::Sprite,
+    components::Audio>;
+using EntityStorage = engine::ecs::EntityStorage<Entity>;
+using EntityBuilder = engine::ecs::EntityBuilder<Entity>;
+using System        = engine::ecs::System<Entity>;
+using SystemManager = engine::ecs::SystemManager<System>;
+using TextureHolder = engine::TextureHolder<engine::string>;
+using AudioHolder   = engine::AudioHolder<engine::string>;
 
 class DebugSystem : public System {
 public:
@@ -208,7 +215,7 @@ private:
 
 class PlayerSystem : public System {
 public:
-    PlayerSystem(ResourceHolder& holder)
+    PlayerSystem(TextureHolder& holder)
     {
         planet = holder.load("../resources/Lava.png", "player");
     }
@@ -220,7 +227,8 @@ public:
         builder.create()
             .with<components::Player>()
             .with<components::Color>(WHITE)
-            .with<components::Transform>(components::TransformBuilder().create().scale(10.0f, 10.0f).origin(1.5f, 1.5f).build())
+            .with<components::Transform>(
+                components::TransformBuilder().create().scale(10.0f, 10.0f).origin(1.5f, 1.5f).build())
             .with<components::Sprite>(components::SpriteBuilder()
                                           .create()
                                           .texture(planet)
@@ -262,7 +270,7 @@ private:
 
 class CellSystem : public System {
 public:
-    CellSystem(ResourceHolder& holder)
+    CellSystem(TextureHolder& holder)
     {
         planet = holder.load("../resources/Terran.png", "planet");
     }
@@ -391,6 +399,46 @@ private:
     engine::f32 view_{0};
 };
 
+class AudioSystem : public System {
+public:
+    AudioSystem(AudioHolder& holder)
+    {
+        music_ = holder.load("../resources/music.mp3", "piano");
+    }
+
+    void setup(Storage& storage) noexcept override {
+        EntityBuilder builder(storage);
+
+        builder.create()
+            .with<components::Audio>(components::Audio{music_, true})
+            .build();
+    }
+
+    void update(Storage& storage) noexcept override {
+        PROFILE_FUNCTION();
+
+        auto audio_iter = storage.iterator<components::Audio>();
+
+        while (audio_iter) {
+            const auto& [audio] = *audio_iter;
+
+            if (audio.playing)
+            {
+                PlayMusicStream(audio.music);
+                UpdateMusicStream(audio.music);
+            } else {
+                StopMusicStream(audio.music);
+            }
+
+            ++audio_iter;
+        }
+
+    }
+
+private:
+    engine::Music music_;
+};
+
 class Game : public engine::Game {
 public:
     Game()
@@ -405,8 +453,9 @@ public:
         engine::Game::setup();
 
         manager_.add(std::make_unique<RenderSystem>(width(), height(), 100.0f));
-        manager_.add(std::make_unique<CellSystem>(holder_));
-        manager_.add(std::make_unique<PlayerSystem>(holder_));
+        manager_.add(std::make_unique<CellSystem>(textures_));
+        manager_.add(std::make_unique<PlayerSystem>(textures_));
+        manager_.add(std::make_unique<AudioSystem>(audio_));
         manager_.add(std::make_unique<DebugSystem>());
     }
 
@@ -430,7 +479,8 @@ public:
 
 private:
     SystemManager manager_;
-    ResourceHolder holder_;
+    TextureHolder textures_;
+    AudioHolder audio_;
 };
 } // namespace impl
 

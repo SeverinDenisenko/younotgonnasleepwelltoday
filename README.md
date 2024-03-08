@@ -9,8 +9,10 @@
 * Rendering
 * * Sprite rendering ✔️
 * * Sprite animation
+* * UI rendering
+* * * UI components
 * * Rendering demo
-* Audio
+* Audio ✔️
 * * Audio demo
 * Content packing
 * * Binary data format
