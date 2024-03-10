@@ -6,15 +6,17 @@ project(younotgonnasleepwelltoday)
 set(CMAKE_BUILD_TYPE "Debug")
 set(PROFILE_INTERNALS True)
 
-## End build options
-
 set(CMAKE_C_STANDARD 20)
 set(CMAKE_CXX_STANDARD 20)
+
+# Dependensies
 
 set(BOX2D_BUILD_TESTBED OFF)
 add_subdirectory(${PROJECT_SOURCE_DIR}/deps/raylib)
 add_subdirectory(${PROJECT_SOURCE_DIR}/deps/box2d)
 add_subdirectory(${PROJECT_SOURCE_DIR}/deps/fmt)
+
+# Sources
 
 file(GLOB SRC ${PROJECT_SOURCE_DIR}/src/* ${PROJECT_SOURCE_DIR}/src/engine/*)
 add_executable(${PROJECT_NAME} ${SRC})
@@ -40,3 +42,4 @@ if (APPLE)
     target_link_libraries(${PROJECT_NAME} "-framework OpenGL")
 endif()
 
+# Package staff

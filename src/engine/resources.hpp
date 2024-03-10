@@ -1,5 +1,6 @@
 #pragma once
 
+#include <filesystem>
 #include <unordered_map>
 
 #include "defines.hpp"
@@ -9,12 +10,27 @@ namespace engine {
 using Texture = Texture2D;
 using Music   = Music;
 
+class Filesystem {
+public:
+    Filesystem() noexcept;
+
+    string resolve(string relative) noexcept;
+
+private:
+    std::filesystem::path root_;
+};
+
 template <typename Alias>
 class TextureHolder {
 public:
-    Texture& load(cstr name, Alias alias) noexcept
+    TextureHolder(Filesystem& fs)
+        : fs_(fs)
     {
-        Texture res = LoadTexture(name);
+    }
+
+    Texture& load(string name, Alias alias) noexcept
+    {
+        Texture res = LoadTexture(fs_.resolve(name).c_str());
         textures_.emplace(alias, res);
 
         return get(alias);
@@ -40,14 +56,20 @@ public:
 
 private:
     std::unordered_map<Alias, Texture> textures_;
+    Filesystem& fs_;
 };
 
 template <typename Alias>
 class AudioHolder {
 public:
-    Music& load(cstr name, Alias alias) noexcept
+    AudioHolder(Filesystem& fs)
+        : fs_(fs)
     {
-        Music res = LoadMusicStream(name);
+    }
+
+    Music& load(string name, Alias alias) noexcept
+    {
+        Music res = LoadMusicStream(fs_.resolve(name).c_str());
         music_.emplace(alias, res);
 
         return get(alias);
@@ -73,6 +95,7 @@ public:
 
 private:
     std::unordered_map<Alias, Music> music_;
+    Filesystem& fs_;
 };
 
 } // namespace engine

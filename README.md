@@ -14,10 +14,9 @@
 * * Rendering demo
 * Audio ✔️
 * * Audio demo
-* Content packing
-* * Binary data format
-* * Embeded packing tool
+* Virtual filesystem ✔️
 * Physics
 * * Task-based parallelism
 * * Physics demo
 * Event system overlay
+* Setup CI
