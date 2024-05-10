@@ -3,7 +3,7 @@ project(younotgonnasleepwelltoday)
 
 ## Build options
 
-set(CMAKE_BUILD_TYPE "Debug")
+set(CMAKE_BUILD_TYPE "Release")
 set(PROFILE_INTERNALS True)
 
 set(CMAKE_C_STANDARD 20)
@@ -28,10 +28,10 @@ if(PROFILE_INTERNALS)
 endif()
 
 if (CMAKE_BUILD_TYPE EQUAL "Debug")
-    target_compile_options(${PROJECT_NAME} PUBLIC  "-fsanitize=address" ${COMMON_COMPILE_OPTIONS})
+    target_compile_options(${PROJECT_NAME} PUBLIC  "-fsanitize=address" ${COMMON_COMPILE_OPTIONS} "-O0")
     target_link_options(${PROJECT_NAME} PUBLIC "-fsanitize=address")
 else()
-    target_compile_options(${PROJECT_NAME} PUBLIC "-O3" ${COMMON_COMPILE_OPTIONS})
+    target_compile_options(${PROJECT_NAME} PUBLIC ${COMMON_COMPILE_OPTIONS} "-O3")
 endif()
 
 target_link_libraries(${PROJECT_NAME} raylib fmt)

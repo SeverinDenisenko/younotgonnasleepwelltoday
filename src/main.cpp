@@ -164,6 +164,10 @@ struct Audio {
 
 struct Player {};
 
+struct Flags {
+    bool ui{false};
+};
+
 } // namespace components
 
 using Entity = engine::ecs::Entity<
@@ -173,7 +177,8 @@ using Entity = engine::ecs::Entity<
     components::Text,
     components::Player,
     components::Sprite,
-    components::Audio>;
+    components::Audio,
+    components::Flags>;
 using EntityStorage = engine::ecs::EntityStorage<Entity>;
 using EntityBuilder = engine::ecs::EntityBuilder<Entity>;
 using System        = engine::ecs::System<Entity>;
@@ -188,7 +193,8 @@ public:
         EntityBuilder builder(storage);
 
         builder.create()
-            .with<components::Text>("Placeholder", 3.0, 1.0, 3.0)
+            .with<components::Flags>(components::Flags{.ui = true})
+            .with<components::Text>("Placeholder", 15.0, 1.0, 15.0)
             .with<components::Color>(RED)
             .with<components::Transform>(1.0f, 1.0f)
             .build();
@@ -226,6 +232,7 @@ public:
         EntityBuilder builder(storage);
 
         builder.create()
+            .with<components::Flags>(components::Flags{.ui = false})
             .with<components::Player>()
             .with<components::Color>(WHITE)
             .with<components::Transform>(
@@ -289,6 +296,7 @@ public:
                 engine::f32 y = j * square;
 
                 builder.create()
+                    .with<components::Flags>(components::Flags{.ui = false})
                     .with<components::Color>(WHITE)
                     .with<components::Transform>(
                         components::TransformBuilder().create().position(x, y).scale(square, square).build())
@@ -335,6 +343,9 @@ public:
         BeginDrawing();
         ClearBackground(RAYWHITE);
 
+        texures(storage, true);
+        text(storage, true);
+
         const auto& [camera, transform] = storage.get<components::Camera, components::Transform>();
         BeginMode2D((Camera2D){
             .target   = (Vector2){transform.pos.x, transform.pos.y},
@@ -342,54 +353,60 @@ public:
             .rotation = transform.rot,
             .zoom     = camera.zoom});
 
-        texures(storage);
-        text(storage);
+        texures(storage, false);
+        text(storage, false);
 
         EndMode2D();
         EndDrawing();
     }
 
 private:
-    void text(Storage& storage)
+    void text(Storage& storage, bool ui)
     {
         PROFILE_FUNCTION();
 
-        auto text_iter = storage.iterator<components::Text, components::Transform, components::Color>();
+        auto text_iter =
+            storage.iterator<components::Text, components::Transform, components::Color, components::Flags>();
 
         while (text_iter) {
-            const auto& [text, transform, color] = *text_iter;
+            const auto& [text, transform, color, flags] = *text_iter;
 
-            SetTextLineSpacing(text.wspacing);
-            DrawTextPro(
-                GetFontDefault(),
-                text.text,
-                (Vector2){transform.pos.x, transform.pos.y},
-                (Vector2){transform.origin.x, transform.origin.y},
-                transform.rot,
-                text.size,
-                text.hspacing,
-                color.color);
+            if (flags.ui == ui) {
+                SetTextLineSpacing(text.wspacing);
+                DrawTextPro(
+                    GetFontDefault(),
+                    text.text,
+                    (Vector2){transform.pos.x, transform.pos.y},
+                    (Vector2){transform.origin.x, transform.origin.y},
+                    transform.rot,
+                    text.size,
+                    text.hspacing,
+                    color.color);
+            }
 
             ++text_iter;
         }
     }
 
-    void texures(Storage& storage)
+    void texures(Storage& storage, bool ui)
     {
         PROFILE_FUNCTION();
 
-        auto texures_iter = storage.iterator<components::Sprite, components::Transform, components::Color>();
+        auto texures_iter =
+            storage.iterator<components::Sprite, components::Transform, components::Color, components::Flags>();
 
         while (texures_iter) {
-            const auto& [sprite, transform, color] = *texures_iter;
+            const auto& [sprite, transform, color, flags] = *texures_iter;
 
-            DrawTexturePro(
-                sprite.texture,
-                (Rectangle){sprite.pos.x, sprite.pos.y, sprite.size.x, sprite.size.y},
-                (Rectangle){transform.pos.x, transform.pos.y, transform.scale.x, transform.scale.y},
-                (Vector2){transform.origin.x, transform.origin.y},
-                transform.rot,
-                color.color);
+            if (flags.ui == ui) {
+                DrawTexturePro(
+                    sprite.texture,
+                    (Rectangle){sprite.pos.x, sprite.pos.y, sprite.size.x, sprite.size.y},
+                    (Rectangle){transform.pos.x, transform.pos.y, transform.scale.x, transform.scale.y},
+                    (Vector2){transform.origin.x, transform.origin.y},
+                    transform.rot,
+                    color.color);
+            }
 
             ++texures_iter;
         }
