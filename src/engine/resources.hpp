@@ -12,7 +12,7 @@ using Music   = Music;
 
 class Filesystem {
 public:
-    Filesystem() noexcept;
+    Filesystem(string root) noexcept;
 
     string resolve(string relative) noexcept;
 

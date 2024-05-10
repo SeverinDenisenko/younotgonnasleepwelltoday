@@ -13,7 +13,7 @@ set(CMAKE_CXX_STANDARD 20)
 
 set(BOX2D_BUILD_TESTBED OFF)
 add_subdirectory(${PROJECT_SOURCE_DIR}/deps/raylib)
-add_subdirectory(${PROJECT_SOURCE_DIR}/deps/box2d)
+# add_subdirectory(${PROJECT_SOURCE_DIR}/deps/box2d)
 add_subdirectory(${PROJECT_SOURCE_DIR}/deps/fmt)
 
 # Sources
@@ -34,7 +34,7 @@ else()
     target_compile_options(${PROJECT_NAME} PUBLIC "-O3" ${COMMON_COMPILE_OPTIONS})
 endif()
 
-target_link_libraries(${PROJECT_NAME} raylib box2d fmt)
+target_link_libraries(${PROJECT_NAME} raylib fmt)
 
 if (APPLE)
     target_link_libraries(${PROJECT_NAME} "-framework IOKit")

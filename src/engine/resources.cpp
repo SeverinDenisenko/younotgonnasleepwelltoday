@@ -1,9 +1,9 @@
 #include "resources.hpp"
 
 namespace engine {
-Filesystem::Filesystem() noexcept
+Filesystem::Filesystem(string root) noexcept
 {
-    root_ = std::filesystem::current_path() / "content";
+    root_ = std::move(root);
 }
 
 string Filesystem::resolve(string relative) noexcept

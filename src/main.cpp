@@ -1,4 +1,5 @@
-#include "box2d/box2d.h"
+#include "fmt/format.h"
+// #include "box2d/box2d.h"
 #include "raylib.h"
 
 #include "engine/core.hpp"
@@ -9,7 +10,7 @@
 
 #include <cmath>
 
-#include <fmt/format.h>
+#include "config.hpp"
 
 namespace impl {
 
@@ -477,7 +478,7 @@ public:
     }
 
 private:
-    engine::Filesystem fs_{};
+    engine::Filesystem fs_{RESOURCES_PATH};
     SystemManager manager_;
     TextureHolder textures_{fs_};
     AudioHolder audio_{fs_};
