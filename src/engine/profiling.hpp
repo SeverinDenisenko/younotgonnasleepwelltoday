@@ -11,6 +11,11 @@ namespace engine {
 using time_t    = std::chrono::time_point<std::chrono::high_resolution_clock>;
 using elapsed_t = f64;
 
+struct AutomaticProfilerEntry {
+    elapsed_t elapsed;
+    size_t count;
+};
+
 class AutomaticProfilerRegister {
 public:
     void add(cstr name, time_t begin, time_t end);
@@ -20,7 +25,7 @@ public:
     ~AutomaticProfilerRegister();
     AutomaticProfilerRegister() = default;
 
-    std::unordered_map<cstr, elapsed_t> measurements_;
+    std::unordered_map<cstr, AutomaticProfilerEntry> measurements_;
 
     static uptr<AutomaticProfilerRegister> instance_;
 };

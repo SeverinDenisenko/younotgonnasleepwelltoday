@@ -22,10 +22,12 @@ void AutomaticProfilerRegister::add(cstr name, time_t begin, time_t end)
     std::chrono::duration<elapsed_t> diff = end - begin;
 
     if (measurements_.contains(name)) {
-        measurements_[name] += diff.count();
+        measurements_[name].elapsed += diff.count();
+        measurements_[name].count += 1;
     }
     else {
-        measurements_[name] = diff.count();
+        measurements_[name].elapsed = diff.count();
+        measurements_[name].count   = 1;
     }
 }
 
@@ -33,12 +35,13 @@ AutomaticProfilerRegister::~AutomaticProfilerRegister()
 {
     std::map<elapsed_t, cstr> results;
 
-    for (auto& [name, elapsed] : measurements_) {
-        results.emplace(elapsed, name);
+    for (auto& [name, entry] : measurements_) {
+        results.emplace(entry.elapsed / entry.count, name);
     }
 
+    std::cout << "Brief stats per frame:" << std::endl;
     for (auto& [elapsed, name] : results) {
-        std::cout << std::fixed << elapsed << "s\t:\t" << std::string(name) << std::endl;
+        std::cout << std::fixed << std::setw(13) << elapsed * 1000.0 << " ms :\t" << std::string(name) << std::endl;
     }
 }
 
