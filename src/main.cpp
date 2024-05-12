@@ -194,6 +194,23 @@ using SystemManager = engine::ecs::SystemManager<System>;
 using TextureHolder = engine::TextureHolder<engine::string>;
 using AudioHolder   = engine::AudioHolder<engine::string>;
 
+namespace game_utilities {
+
+Vector2 getMousePosition(EntityStorage& storage)
+{
+    const auto& [camera, transform] = storage.get<components::Camera, components::Transform>();
+
+    return GetScreenToWorld2D(
+        GetMousePosition(),
+        (Camera2D){
+            .target   = (Vector2){transform.pos.x, transform.pos.y},
+            .offset   = (Vector2){transform.origin.x, transform.origin.y},
+            .rotation = transform.rot,
+            .zoom     = camera.zoom});
+}
+
+} // namespace game_utilities
+
 class DebugSystem : public System {
 public:
     void setup(Storage& storage) noexcept override
@@ -232,7 +249,8 @@ class PlayerSystem : public System {
 public:
     PlayerSystem(TextureHolder& holder)
     {
-        planet = holder.load("Lava.png", "player");
+        cross = holder.load("cross.png", "player");
+        HideCursor();
     }
 
     void setup(Storage& storage) noexcept override
@@ -243,50 +261,43 @@ public:
             .with<components::Flags>(components::Flags{.ui = false})
             .with<components::Player>()
             .with<components::Color>(WHITE)
-            .with<components::Transform>(components::TransformBuilder()
-                                             .create()
-                                             .scale(game_preferenses::cell_size, game_preferenses::cell_size)
-                                             .origin(1.5f, 1.5f)
-                                             .build())
+            .with<components::Transform>(
+                components::TransformBuilder()
+                    .create()
+                    .scale(game_preferenses::cell_size, game_preferenses::cell_size)
+                    .origin(0.5f * game_preferenses::cell_size, 0.5f * game_preferenses::cell_size)
+                    .build())
             .with<components::Sprite>(components::SpriteBuilder()
                                           .create()
-                                          .texture(planet)
+                                          .texture(cross)
                                           .position(0.0f, 0.0f)
-                                          .size(planet.width, planet.height)
+                                          .size(cross.width, cross.height)
                                           .build())
             .build();
     }
 
     void update(Storage& storage) noexcept override
     {
-        engine::f32 dt    = GetFrameTime();
-        engine::f32 speed = 10.0f;
+        // engine::f32 dt    = GetFrameTime();
+        // engine::f32 speed = 10.0f;
 
         const auto& [player, ptransform] = storage.get<components::Player, components::Transform>();
 
-        if (IsKeyDown(KEY_W)) {
-            ptransform.pos.y -= dt * speed;
-        }
-        if (IsKeyDown(KEY_S)) {
-            ptransform.pos.y += dt * speed;
-        }
-        if (IsKeyDown(KEY_A)) {
-            ptransform.pos.x -= dt * speed;
-        }
-        if (IsKeyDown(KEY_D)) {
-            ptransform.pos.x += dt * speed;
-        }
+        Vector2 pos = game_utilities::getMousePosition(storage);
+
+        ptransform.pos.x = pos.x;
+        ptransform.pos.y = pos.y;
     }
 
 private:
-    engine::Texture planet;
+    engine::Texture cross;
 };
 
 class CellSystem : public System {
 public:
     CellSystem(TextureHolder& holder)
     {
-        planet = holder.load("Terran.png", "planet");
+        cell = holder.load("cell.png", "cell");
     }
 
     void setup(Storage& storage) noexcept override
@@ -312,9 +323,9 @@ public:
                                                      .build())
                     .with<components::Sprite>(components::SpriteBuilder()
                                                   .create()
-                                                  .texture(planet)
+                                                  .texture(cell)
                                                   .position(0.0f, 0.0f)
-                                                  .size(planet.width, planet.height)
+                                                  .size(cell.width, cell.height)
                                                   .build())
                     .build();
             }
@@ -324,7 +335,7 @@ public:
     void update(Storage&) noexcept override {}
 
 private:
-    engine::Texture planet;
+    engine::Texture cell;
 };
 
 class RenderSystem : public System {
@@ -351,7 +362,7 @@ public:
         PROFILE_FUNCTION();
 
         BeginDrawing();
-        ClearBackground(RAYWHITE);
+        ClearBackground(Color{.r = 42, .g = 35, .b = 73, .a = 255});
 
         texures(storage, true);
         text(storage, true);
