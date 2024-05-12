@@ -1,0 +1,1 @@
+#define RENDER_WIDTH 100.0f

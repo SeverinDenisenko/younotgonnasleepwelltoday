@@ -166,9 +166,17 @@ struct Player {};
 
 struct Flags {
     bool ui{false};
+    bool cell{false};
 };
 
 } // namespace components
+
+namespace game_preferenses {
+
+static const engine::f32 grid_size = 10.0;
+static const engine::f32 cell_size = RENDER_WIDTH / grid_size;
+
+}; // namespace game_preferenses
 
 using Entity = engine::ecs::Entity<
     components::Camera,
@@ -235,8 +243,11 @@ public:
             .with<components::Flags>(components::Flags{.ui = false})
             .with<components::Player>()
             .with<components::Color>(WHITE)
-            .with<components::Transform>(
-                components::TransformBuilder().create().scale(10.0f, 10.0f).origin(1.5f, 1.5f).build())
+            .with<components::Transform>(components::TransformBuilder()
+                                             .create()
+                                             .scale(game_preferenses::cell_size, game_preferenses::cell_size)
+                                             .origin(1.5f, 1.5f)
+                                             .build())
             .with<components::Sprite>(components::SpriteBuilder()
                                           .create()
                                           .texture(planet)
@@ -252,23 +263,18 @@ public:
         engine::f32 speed = 10.0f;
 
         const auto& [player, ptransform] = storage.get<components::Player, components::Transform>();
-        const auto& [camera, ctransform] = storage.get<components::Camera, components::Transform>();
 
         if (IsKeyDown(KEY_W)) {
             ptransform.pos.y -= dt * speed;
-            ctransform.pos.y -= dt * speed;
         }
         if (IsKeyDown(KEY_S)) {
             ptransform.pos.y += dt * speed;
-            ctransform.pos.y += dt * speed;
         }
         if (IsKeyDown(KEY_A)) {
             ptransform.pos.x -= dt * speed;
-            ctransform.pos.x -= dt * speed;
         }
         if (IsKeyDown(KEY_D)) {
             ptransform.pos.x += dt * speed;
-            ctransform.pos.x += dt * speed;
         }
     }
 
@@ -287,19 +293,23 @@ public:
     {
         EntityBuilder builder(storage);
 
-        engine::u32 size   = 10;
-        engine::f32 square = 100.0f / size;
+        std::function<engine::f32(engine::f32)> coord = [](engine::f32 i) {
+            return i * game_preferenses::cell_size - game_preferenses::grid_size * game_preferenses::cell_size / 2.0;
+        };
 
-        for (engine::u32 i = 0; i < size; ++i) {
-            for (engine::u32 j = 0; j < size; ++j) {
-                engine::f32 x = i * square;
-                engine::f32 y = j * square;
+        for (engine::u32 i = 0; i < game_preferenses::grid_size; ++i) {
+            for (engine::u32 j = 0; j < game_preferenses::grid_size; ++j) {
+                engine::f32 x = coord(i);
+                engine::f32 y = coord(j);
 
                 builder.create()
-                    .with<components::Flags>(components::Flags{.ui = false})
+                    .with<components::Flags>(components::Flags{.ui = false, .cell = true})
                     .with<components::Color>(WHITE)
-                    .with<components::Transform>(
-                        components::TransformBuilder().create().position(x, y).scale(square, square).build())
+                    .with<components::Transform>(components::TransformBuilder()
+                                                     .create()
+                                                     .position(x, y)
+                                                     .scale(game_preferenses::cell_size, game_preferenses::cell_size)
+                                                     .build())
                     .with<components::Sprite>(components::SpriteBuilder()
                                                   .create()
                                                   .texture(planet)
@@ -469,7 +479,7 @@ public:
 
         engine::Game::setup();
 
-        manager_.add(std::make_unique<RenderSystem>(width(), height(), 100.0f));
+        manager_.add(std::make_unique<RenderSystem>(width(), height(), RENDER_WIDTH));
         manager_.add(std::make_unique<CellSystem>(textures_));
         manager_.add(std::make_unique<PlayerSystem>(textures_));
         manager_.add(std::make_unique<AudioSystem>(audio_));
